@@ -13,8 +13,25 @@
 <div class="row">
  <div class="col-md-8">
   <h3>First Blog Post!</h3>
-  <label>2019-06-13</label>
-  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Vestibulum mattis ullamcorper velit sed ullamcorper morbi tincidunt ornare massa. Cursus vitae congue mauris rhoncus. Pulvinar neque laoreet suspendisse interdum. Eu nisl nunc mi ipsum faucibus vitae. Sapien faucibus et molestie ac feugiat sed lectus vestibulum mattis. Nibh tortor id aliquet lectus proin nibh nisl. Sit amet venenatis urna cursus eget. Amet consectetur adipiscing elit duis. Quam pellentesque nec nam aliquam sem et tortor. Congue nisi vitae suscipit tellus.</p>
+  <label>2019-06-16</label>
+  <h1>Simplify with dictionary comprehension</h1>
+<p>So far in my quest to learn python, the basics have been somewhat intuitive and straightforward to implement. Moving into more complex functions, it isn't simply if the code runs or not that matters, simplicity, specificity and ease of interpretation become important factors to be considered. Everyone who has toyed with coding is familiar with "for" &amp; "if" interation statements, even if they're not working in Python. At it's core, dictionary comprehensions derive a dictionary from another dictionary. We'll start by creating a dictionary:</p>
+<p>''' keys = ['a', 'b', 'c', 'd', 'e']
+vals = [1,2,3,4,5]
+dict = {k:v for (k,v) in zip(keys, values)}
+print(dict)'''</p>
+<p>Now lets say we're trying to only return the pairs that contain an odd number. We could do it with a for, if statement like this:</p>
+<p>'''for n in dict:
+    if n%2==1:
+        new_dict[n] = n
+        return new_dict'''</p>
+<p>This method is relativly clear to read, even for those that familiar to coding. This is both good and bad, as I've found myself leaning on it at times when dictionary comprehension would make my life easier. Compare with the code to do the same thing as a dict comprehension.</p>
+<p>'''newdict = {k:v for v in dict if v % 2 == 1} 
+print(newdict)'''</p>
+<p>This method takes a little bit longer to understand intuitively. Three lines of code have been reduced to one in the above example. Curly brackets are needed to create the new dictionary. The first section calls every key value pait(k:v) for value if that value meets the condition(in this case being an odd number. In situations this simple, their function is the same, but when youneed to add a loop within a loop, this can be really clunky and confusing using for iterations. There is one caveat; while all dictionary comprehensions can be written as for loops, not all for loops can be written as dict comprehensions. </p>
+<p>A couple of resources that helped me get a handle on dictionary comprehensions:<a href="https://www.datacamp.com/community/tutorials/python-dictionary-comprehension">https://www.datacamp.com/community/tutorials/python-dictionary-comprehension</a> 
+<a href="http://cmdlinetips.com/2018/01/5-examples-using-dict-comprehension/">http://cmdlinetips.com/2018/01/5-examples-using-dict-comprehension/</a>
+<a href="https://markhneedham.com/blog/2018/04/02/python-list-to-dictionary-comprehensions/">https://markhneedham.com/blog/2018/04/02/python-list-to-dictionary-comprehensions/</a> </p>
  </div>
 </div>
  </div>
