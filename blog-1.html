@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
- <title>First Blog Post!</title>
+ <title>Simplify with dictionary comprehension</title>
  <!-- Latest compiled and minified CSS -->
  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
  <div class="container">
@@ -12,23 +12,31 @@
  <div class="container">
 <div class="row">
  <div class="col-md-8">
-  <h3>First Blog Post!</h3>
+  <h3>Simplify with dictionary comprehension</h3>
   <label>2019-06-16</label>
-  <h1>Simplify with dictionary comprehension</h1>
-<p>So far in my quest to learn python, the basics have been somewhat intuitive and straightforward to implement. Moving into more complex functions, it isn't simply if the code runs or not that matters, simplicity, specificity and ease of interpretation become important factors to be considered. Everyone who has toyed with coding is familiar with "for" &amp; "if" interation statements, even if they're not working in Python. At it's core, dictionary comprehensions derive a dictionary from another dictionary. We'll start by creating a dictionary:</p>
-<p>''' keys = ['a', 'b', 'c', 'd', 'e']
-vals = [1,2,3,4,5]
-dict = {k:v for (k,v) in zip(keys, values)}
-print(dict)'''</p>
+  <p>So far in my quest to learn python, the basics have been somewhat intuitive and straightforward to implement. Moving into more complex functions, it isn't simply if the code runs or not that matters, simplicity, specificity and ease of interpretation become important factors to be considered. Everyone who has toyed with coding is familiar with "for" &amp; "if" interation statements, even if they're not working in Python. At it's core, dictionary comprehensions derive a dictionary from another dictionary. We'll start by creating a dictionary:</p>
+<div class="highlight"><pre><span></span>    <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;e&#39;</span><span class="p">]</span>
+    <span class="n">vals</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">]</span>
+    <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">values</span><span class="p">)}</span>
+    <span class="k">print</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+</pre></div>
+
+
 <p>Now lets say we're trying to only return the pairs that contain an odd number. We could do it with a for, if statement like this:</p>
-<p>'''for n in dict:
-    if n%2==1:
-        new_dict[n] = n
-        return new_dict'''</p>
+<div class="highlight"><pre><span></span>    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">n</span><span class="o">%</span><span class="mi">2</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">new_dict</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
+    <span class="k">return</span> <span class="n">new_dict</span>
+</pre></div>
+
+
 <p>This method is relativly clear to read, even for those that familiar to coding. This is both good and bad, as I've found myself leaning on it at times when dictionary comprehension would make my life easier. Compare with the code to do the same thing as a dict comprehension.</p>
-<p>'''newdict = {k:v for v in dict if v % 2 == 1} 
-print(newdict)'''</p>
-<p>This method takes a little bit longer to understand intuitively. Three lines of code have been reduced to one in the above example. Curly brackets are needed to create the new dictionary. The first section calls every key value pait(k:v) for value if that value meets the condition(in this case being an odd number. In situations this simple, their function is the same, but when youneed to add a loop within a loop, this can be really clunky and confusing using for iterations. There is one caveat; while all dictionary comprehensions can be written as for loops, not all for loops can be written as dict comprehensions. </p>
+<div class="highlight"><pre><span></span>    <span class="n">newdict</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">dict</span> <span class="k">if</span> <span class="n">v</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">1</span><span class="p">}</span> 
+    <span class="k">print</span><span class="p">(</span><span class="n">newdict</span><span class="p">)</span>
+</pre></div>
+
+
+<p>This method takes a little bit longer to understand intuitively. Three lines of code have been reduced to one in the above example. Curly brackets are needed to create the new dictionary. The first section calls every key value pait(k:v) for value if that value meets the condition(in this case being an odd number. In situations this simple, their function is the same, but when youneed to add a loop within a loop, this can be really clunky and confusing using for iterations. There is one caveat; while all dictionary comprehensions can be written as for loops, not all for loops can be written as dict comprehensions. The most difficult thing about switching to dictionary comprehension is fighting the urge to give in to the relative simplicity of for loops. </p>
 <p>A couple of resources that helped me get a handle on dictionary comprehensions:<a href="https://www.datacamp.com/community/tutorials/python-dictionary-comprehension">https://www.datacamp.com/community/tutorials/python-dictionary-comprehension</a> 
 <a href="http://cmdlinetips.com/2018/01/5-examples-using-dict-comprehension/">http://cmdlinetips.com/2018/01/5-examples-using-dict-comprehension/</a>
 <a href="https://markhneedham.com/blog/2018/04/02/python-list-to-dictionary-comprehensions/">https://markhneedham.com/blog/2018/04/02/python-list-to-dictionary-comprehensions/</a> </p>
