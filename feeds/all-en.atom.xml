@@ -46,7 +46,6 @@
 
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;##Putting the tweets into the markov chain we can see the potential paths the words will follow. &lt;/span&gt;
 &lt;span class="n"&gt;ye_dict&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;markov_chain&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tweets_str&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;span class="n"&gt;ye_dict&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
 
