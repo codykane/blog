@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <title>Principal Component Analysis for Dummies</title>
+ <!-- Latest compiled and minified CSS -->
+ <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+ <div class="container">
+  <h1><a href="https://codykane.github.io/blog">Blog</a></h1>
+ </div>
+</head>
+<body>
+ <div class="container">
+<div class="row">
+ <div class="col-md-8">
+  <h3>Principal Component Analysis for Dummies</h3>
+  <label>2019-10-02</label>
+  <p>Data from the following link: https://archive.ics.uci.edu/ml/machine-learning-databases/ecoli/
+The dataset was created by Kenta Nakai at the Institute of cellular and Molecular Biology in Osaka, Japan. It concerns the protein localization sites of E.coli subspecies. This is all secondary to my purpose of demonstrating PCA, but if you're interested the following papers were written about the dataset:</p>
+<p>Reference: "Expert Sytem for Predicting Protein Localization Sites in 
+           Gram-Negative Bacteria", Kenta Nakai &amp; Minoru Kanehisa,<br>
+           PROTEINS: Structure, Function, and Genetics 11:95-110, 1991.</p>
+<p>Reference: "A Knowledge Base for Predicting Protein Localization Sites in
+       Eukaryotic Cells", Kenta Nakai &amp; Minoru Kanehisa, 
+       Genomics 14:897-911, 1992.</p>
+<p>The principal use of PCA is visualization, as well as feature selection. It shouldn't be used for clustering because 
+k-means and other will be much more efficient. Really, you should turn to PCA when you have data with a lot of dimensions that you need to represent with fewer features. If you have &gt;3 features, it's impossible to fully visualize the data to begin to hypothesize ideas about the relationships within. It's like you're have a cube of jell-o (stay with me here), that you need to represent on a flat surface (let's say a piece of paper). The algorithm of PCA are basically instructions on how to smear it on the paper so that it maintains some/most of its essential qualities, say, it's volume and is made up of squares. Of course, there will be loss of information in the process.  </p>
+<p>To summarize the math, powering PCA, the unique attribute of eigenvectors is that they maintain the linearity (the line that it spans) during a transformation. This means, that when we make a transformation, in our case condensing the data into fewer dimensions, the eigenvectors will maintain their trajectory, just get stretched. Imagine our tasty cube of jell-o. If we were to stick a toothpick through it, then rotate it 180 degrees with our finger, the toothpick remains on its trajectory, ie it is the eigenvector of the transformation (the spin). In PCA the transformation is the reduction of dimensions. The eigenvector is found that maximizes the variance captured on the line. This is our first principal component. The following cThe eigenvalues represnt the variance covered by each principal component.    </p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">sklearn.decomposition</span> <span class="kn">import</span> <span class="n">PCA</span>
+<span class="kn">import</span> <span class="nn">statistics</span> <span class="kn">as</span> <span class="nn">st</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">StandardScaler</span>
+</pre></div>
+
+
+<div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;/Users/cody/Documents/HES/HW1/Data/ecoli.csv&#39;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+<span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>0</th>
+      <th>1</th>
+      <th>2</th>
+      <th>3</th>
+      <th>4</th>
+      <th>5</th>
+      <th>6</th>
+      <th>7</th>
+      <th>8</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>AAT_ECOLI</td>
+      <td>0.49</td>
+      <td>0.29</td>
+      <td>0.48</td>
+      <td>0.5</td>
+      <td>0.56</td>
+      <td>0.24</td>
+      <td>0.35</td>
+      <td>cp</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>ACEA_ECOLI</td>
+      <td>0.07</td>
+      <td>0.40</td>
+      <td>0.48</td>
+      <td>0.5</td>
+      <td>0.54</td>
+      <td>0.35</td>
+      <td>0.44</td>
+      <td>cp</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>ACEK_ECOLI</td>
+      <td>0.56</td>
+      <td>0.40</td>
+      <td>0.48</td>
+      <td>0.5</td>
+      <td>0.49</td>
+      <td>0.37</td>
+      <td>0.46</td>
+      <td>cp</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>ACKA_ECOLI</td>
+      <td>0.59</td>
+      <td>0.49</td>
+      <td>0.48</td>
+      <td>0.5</td>
+      <td>0.52</td>
+      <td>0.45</td>
+      <td>0.36</td>
+      <td>cp</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>ADI_ECOLI</td>
+      <td>0.23</td>
+      <td>0.32</td>
+      <td>0.48</td>
+      <td>0.5</td>
+      <td>0.55</td>
+      <td>0.25</td>
+      <td>0.35</td>
+      <td>cp</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>Adding the labels from the .name file (see the link above). It's necessary to z-score all of the data, which means to make the average zero, and every entry in the rows is just how many standard deviations the point is from the mean. Otherwise, the columns with the largest spread would dominate the PCA, and it would seem like it would be capturing much more variance than it really is. Let's try both to demonstrate. </p>
+<div class="highlight"><pre><span></span><span class="n">data</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;mcg&#39;</span><span class="p">,</span> <span class="s1">&#39;gvh&#39;</span><span class="p">,</span> <span class="s1">&#39;lip&#39;</span><span class="p">,</span> <span class="s1">&#39;chg&#39;</span><span class="p">,</span> <span class="s1">&#39;aac&#39;</span><span class="p">,</span> <span class="s1">&#39;alm1&#39;</span><span class="p">,</span> <span class="s1">&#39;alm2&#39;</span><span class="p">,</span> <span class="s1">&#39;local_site&#39;</span><span class="p">]</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">local_site</span>
+<span class="n">num</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;local_site&#39;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">z_scale</span> <span class="o">=</span> <span class="n">StandardScaler</span><span class="p">()</span>
+<span class="n">num1</span> <span class="o">=</span> <span class="n">z_scale</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre><span></span><span class="n">pca</span> <span class="o">=</span> <span class="n">PCA</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">num_fit</span> <span class="o">=</span> <span class="n">pca</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">num1</span><span class="p">)</span> 
+<span class="k">print</span><span class="p">(</span><span class="n">pca</span><span class="o">.</span><span class="n">explained_variance_ratio_</span><span class="p">)</span> 
+</pre></div>
+
+
+<div class="highlight"><pre><span></span>[0.31508933 0.20874152 0.17164325 0.1224513 ]
+</pre></div>
+
+
+<p>The z-scored data covers less variance than the original, this is deceptive because it gives more weight to the larger ranges.   </p>
+<div class="highlight"><pre><span></span><span class="n">pca</span> <span class="o">=</span> <span class="n">PCA</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">num_fit</span> <span class="o">=</span> <span class="n">pca</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">num</span><span class="p">)</span> 
+<span class="k">print</span><span class="p">(</span><span class="n">pca</span><span class="o">.</span><span class="n">explained_variance_ratio_</span><span class="p">)</span> 
+</pre></div>
+
+
+<div class="highlight"><pre><span></span>[0.5161681  0.2442034  0.08419874 0.07413522]
+</pre></div>
+
+
+<p>Let's look at the number and distribution of protein localization sites, which is the classifier. </p>
+<div class="highlight"><pre><span></span><span class="n">data</span><span class="o">.</span><span class="n">local_site</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+</pre></div>
+
+
+<div class="highlight"><pre><span></span>cp     143
+im      77
+pp      52
+imU     35
+om      20
+omL      5
+imS      2
+imL      2
+Name: local_site, dtype: int64
+</pre></div>
+
+
+<p>We need to decide how many principal components we'll need to properly represent the data without too much variance loss. To do this we'll plot number of components and explained variance. Another way to do this is with a Scree plot, with the number of eigenvalues on the y-axis, but this is basically the same thing as explained variance, but less immediately intuitive to understand.</p>
+<div class="highlight"><pre><span></span><span class="n">pca</span> <span class="o">=</span> <span class="n">PCA</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">num1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">pca</span><span class="o">.</span><span class="n">explained_variance_ratio_</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;number of components&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;cumulative explained variance&#39;</span><span class="p">);</span>
+</pre></div>
+
+
+<p><img alt="png" src="images/PCA_Blog_14_0.png"></p>
+<p>Looking at the explained variance, we can see that just two principal compononents cover ~ 52% of the variance, and three cover ~ 70% (remembering that python counts from 0, the above 0 = 1 principal component, 1 = 2 etc). </p>
+<div class="highlight"><pre><span></span>
+</pre></div>
+
+
+<div class="highlight"><pre><span></span>[0.31508933 0.20874152 0.17164325 0.1224513 ]
+</pre></div>
+
+
+<div class="highlight"><pre><span></span><span class="n">Df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span> <span class="o">=</span> <span class="n">num_fit</span>
+             <span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;principal component 1&#39;</span><span class="p">,</span> <span class="s1">&#39;principal component 2&#39;</span><span class="p">])</span>
+
+<span class="n">Df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>principal component 1</th>
+      <th>principal component 2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>-1.290352</td>
+      <td>-0.324912</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>-1.586012</td>
+      <td>-1.034683</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>-0.530483</td>
+      <td>-0.130495</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>-0.261721</td>
+      <td>0.338264</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>-1.824364</td>
+      <td>-0.731834</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> 
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Principal Component 1&#39;</span><span class="p">,</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="mi">15</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Principal Component 2&#39;</span><span class="p">,</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="mi">15</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;E.coli Protein Localization sites&#39;</span><span class="p">,</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span>
+
+<span class="n">targets</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;cp&#39;</span> <span class="p">,</span> <span class="s1">&#39;im&#39;</span><span class="p">,</span> <span class="s1">&#39;pp&#39;</span><span class="p">,</span> <span class="s1">&#39;imU&#39;</span><span class="p">,</span><span class="s1">&#39;om&#39;</span><span class="p">,</span><span class="s1">&#39;omL&#39;</span><span class="p">,</span><span class="s1">&#39;imS&#39;</span><span class="p">,</span><span class="s1">&#39;imL&#39;</span><span class="p">]</span>
+<span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="s1">&#39;g&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="s1">&#39;k&#39;</span><span class="p">]</span>
+
+<span class="n">finalDf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">Df</span><span class="p">,</span> <span class="n">labels</span><span class="p">],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">target</span><span class="p">,</span> <span class="n">color</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">targets</span><span class="p">,</span><span class="n">colors</span><span class="p">):</span>
+    <span class="n">indicesToKeep</span> <span class="o">=</span> <span class="n">finalDf</span><span class="p">[</span><span class="s1">&#39;local_site&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">target</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">finalDf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">indicesToKeep</span><span class="p">,</span> <span class="s1">&#39;principal component 1&#39;</span><span class="p">]</span>
+               <span class="p">,</span> <span class="n">finalDf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">indicesToKeep</span><span class="p">,</span> <span class="s1">&#39;principal component 2&#39;</span><span class="p">]</span>
+               <span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">color</span>
+               <span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="mi">30</span>
+               <span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">targets</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+</pre></div>
+
+
+<p><img alt="png" src="images/PCA_Blog_18_0.png"></p>
+<p>We're know plainly able to differentiate the classes in a way we couldn't before thanks to PCA visualization. If we were using this for dimension reduction, 3 components would probably do the trick as they cover a two thirds of the variance but this reall depends on the context of your analysis.</p>
+ </div>
+</div>
+ </div>
+</body>
+</html>
