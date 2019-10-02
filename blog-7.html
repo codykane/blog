@@ -22,9 +22,9 @@ The dataset was created by Kenta Nakai at the Institute of cellular and Molecula
 <p>Reference: "A Knowledge Base for Predicting Protein Localization Sites in
        Eukaryotic Cells", Kenta Nakai &amp; Minoru Kanehisa, 
        Genomics 14:897-911, 1992.</p>
-<p>The principal use of PCA is visualization, as well as feature selection. It shouldn't be used for clustering because 
+<p>The principal use of PCA is visualization as well as feature selection. It shouldn't be used for clustering because 
 k-means and other will be much more efficient. Really, you should turn to PCA when you have data with a lot of dimensions that you need to represent with fewer features. If you have &gt;3 features, it's impossible to fully visualize the data to begin to hypothesize ideas about the relationships within. It's like you're have a cube of jell-o (stay with me here), that you need to represent on a flat surface (let's say a piece of paper). The algorithm of PCA are basically instructions on how to smear it on the paper so that it maintains some/most of its essential qualities, say, it's volume and is made up of squares. Of course, there will be loss of information in the process.  </p>
-<p>To summarize the math, powering PCA, the unique attribute of eigenvectors is that they maintain the linearity (the line that it spans) during a transformation. This means, that when we make a transformation, in our case condensing the data into fewer dimensions, the eigenvectors will maintain their trajectory, just get stretched. Imagine our tasty cube of jell-o. If we were to stick a toothpick through it, then rotate it 180 degrees with our finger, the toothpick remains on its trajectory, ie it is the eigenvector of the transformation (the spin). In PCA the transformation is the reduction of dimensions. The eigenvector is found that maximizes the variance captured on the line. This is our first principal component. The following cThe eigenvalues represnt the variance covered by each principal component.    </p>
+<p>To summarize the math powering PCA, the unique attribute of eigenvectors is that they maintain the linearity (the line that it spans) during a transformation. This means that when we make a transformation, in our case condensing the data into fewer dimensions, the eigenvectors will maintain their trajectory, just getting stretched. Imagine our tasty cube of jell-o. If we were to stick a toothpick through it, then rotate it 180 degrees with our finger, the toothpick remains on its trajectory, ie it is the eigenvector of the transformation (the rotation). In PCA the transformation is the reduction of dimensions. The eigenvector is found that maximizes the variance captured on the line. This is our first principal component. The  eigenvalues represent the variance covered by each principal component.    </p>
 <div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
@@ -180,7 +180,7 @@ Name: local_site, dtype: int64
 </pre></div>
 
 
-<p>We need to decide how many principal components we'll need to properly represent the data without too much variance loss. To do this we'll plot number of components and explained variance. Another way to do this is with a Scree plot, with the number of eigenvalues on the y-axis, but this is basically the same thing as explained variance, but less immediately intuitive to understand.</p>
+<p>We need to decide how many principal components we'll need to properly represent the data without too much variance loss. To do this we'll plot number of components and explained variance. Another way to do this is with a Scree plot, with the number of eigenvalues on the y-axis, but this is basically the same thing as explained variance but less immediately intuitive to understand.</p>
 <div class="highlight"><pre><span></span><span class="n">pca</span> <span class="o">=</span> <span class="n">PCA</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">num1</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">pca</span><span class="o">.</span><span class="n">explained_variance_ratio_</span><span class="p">))</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;number of components&#39;</span><span class="p">)</span>
@@ -282,7 +282,7 @@ Name: local_site, dtype: int64
 
 
 <p><img alt="png" src="images/PCA_Blog_18_0.png"></p>
-<p>We're know plainly able to differentiate the classes in a way we couldn't before thanks to PCA visualization. If we were using this for dimension reduction, 3 components would probably do the trick as they cover a two thirds of the variance but this reall depends on the context of your analysis.</p>
+<p>We're know plainly able to differentiate the classes in a way we couldn't before thanks to PCA visualization. If we were using this for dimension reduction, 3 components would probably do the trick as they cover a two thirds of the variance but this really depends on the context of your analysis.</p>
  </div>
 </div>
  </div>
