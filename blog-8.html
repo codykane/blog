@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <title>Text Summarization</title>
+ <!-- Latest compiled and minified CSS -->
+ <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+ <div class="container">
+  <h1><a href="https://codykane.github.io/blog">Blog</a></h1>
+ </div>
+</head>
+<body>
+ <div class="container">
+<div class="row">
+ <div class="col-md-8">
+  <h3>Text Summarization</h3>
+  <label>2019-10-18</label>
+  <p>Artificial intelligence is a loaded word. The running joke in the datasci community is "If it's written in python, it's probably machine learning. If it's written in powerpoint, it's probably AI". My preferred definition is that of a task that previously we could only really on humans to execute. Language is the most human of all endeavours, so this project feels like my first 'true' foray into artifical intelligence. </p>
+<p>Text summarization is a task that has been done exclusively by humans. Our efficiency in summarizing text is the exact same it was thousands of years ago. For this reason, natural language processing (NLP from here on out) projects like this truly excite me. </p>
+<p>This post is a re-hasing of a presentation I did with Nick Morgan for the Harvard Class "Advanced Machine Learning, Data Mining, and Artificial Intelligence", taught by Dr. Peter Henstock, AI lead for Pfizer. </p>
+<p><a href="https://github.com/Nick-Morgan">Nick's Github</a> </p>
+<h2> Extractive vs Abtractive </h2>
+
+<p>There are two schools of text summarization, abstractive and extractive. Extractive takes out sentences deemed most important and/or covering the largest amount of information. Abstractive generates novel text to summarize the corpus. Both have their positives and negatives, but today we'll be focusing on extractive because abstractive generates all kinds of other NLP problems, generating correct grammar/syntax etc. There are three main steps in building an extractive model: </p>
+<p>1) Construct an intermediate(numerical) interpretation of the text </p>
+<p>2) Score the sentences based on representation </p>
+<p>3) Select n number of sentences for summary</p>
+<h2> TextRank </h2>
+
+<p>The algorithm we'll use to rank the importance of the sentences is called TextRank. It is based on PageRank, which is used to rank the popularity of websites on the internet. The fundamental logic is that important websites will be referenced by other important websites. Through a network analysis we can form a hierarchy. In TextRank, the websites are replaced with sentences from the corpus.</p>
+<h2> Data Cleaning & Extraction </h2>
+
+<p>Before we can feed the text into the algorithm, there are some intermediate cleanign steps. First, we 'tokenize' (split) the text into sentences. Then, we remove most punctuation, this serves to guarantee that our algorithm doesn't read "cat!" and "cat?" as separate words. Then, we remove sentences less than 3 words due to probable lack of info. Then we use cosine similarity to determine similarity of setences. You may need to dust off your linear algebra textbook, but (a very condensed) explanation is that it uses the dot product of the vectors of binarized sentences (converted to 1s &amp; 0s) to compare sameness. For a less obstuse explanation, here is a quality <a href="http://blog.christianperone.com/2013/09/machine-learning-cosine-similarity-for-vector-space-models-part-iii/">blog post</a> </p>
+<p>Let's get down to coding. The dataset is the first 1000 rows of this <a href="https://www.kaggle.com/snapcrack/all-the-news">Kaggle Dataset</a></p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nltk</span>
+<span class="n">nltk</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="s1">&#39;punkt&#39;</span><span class="p">)</span> <span class="c1"># one time execution</span>
+<span class="kn">from</span> <span class="nn">nltk.corpus</span> <span class="kn">import</span> <span class="n">stopwords</span>
+<span class="kn">from</span> <span class="nn">nltk.cluster.util</span> <span class="kn">import</span> <span class="n">cosine_distance</span>
+<span class="kn">from</span> <span class="nn">nltk.tokenize</span> <span class="kn">import</span> <span class="n">sent_tokenize</span>
+<span class="kn">from</span> <span class="nn">nltk.tokenize</span> <span class="kn">import</span> <span class="n">RegexpTokenizer</span>
+
+<span class="kn">from</span> <span class="nn">scipy.spatial.distance</span> <span class="kn">import</span> <span class="n">cosine</span> <span class="k">as</span> <span class="n">cosine_diference</span>
+
+<span class="kn">from</span> <span class="nn">sklearn.feature_extraction.text</span> <span class="kn">import</span> <span class="n">CountVectorizer</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics.pairwise</span> <span class="kn">import</span> <span class="n">cosine_similarity</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">networkx</span> <span class="kn">as</span> <span class="nn">nx</span>
+</pre></div>
+
+
+<div class="highlight"><pre><span></span>[nltk_data] Downloading package punkt to /Users/cody/nltk_data...
+[nltk_data]   Package punkt is already up-to-date!
+</pre></div>
+
+
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">TextSummarizer</span><span class="p">():</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">article</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">generate_clean_sentences</span><span class="p">():</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Purpose:</span>
+<span class="sd">                1) Use nltk.sent_tokenize to split article into sentences</span>
+<span class="sd">                2) Remove punctuation with nltk.RegExpTokenizer</span>
+<span class="sd">                3) Remove sentences with less than 3 words</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sentences</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">sent_tokenize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">article</span><span class="p">))</span>
+            <span class="c1">#not to remove numbers, nor periods &amp; percentage signs, otherwise 1.5C would become 15c</span>
+            <span class="c1">#and 1% chance becomes 1 chance        </span>
+            <span class="n">clean_sentences</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sentences</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;[!,@?#$^.&amp;*]&#39;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="c1"># remove short sentences</span>
+            <span class="n">msk</span> <span class="o">=</span> <span class="n">clean_sentences</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">len</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="mi">3</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clean_sentences</span> <span class="o">=</span> <span class="n">clean_sentences</span><span class="p">[</span><span class="n">msk</span><span class="p">]</span>
+
+        <span class="k">def</span> <span class="nf">rank_sentences</span><span class="p">():</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Purpose:</span>
+<span class="sd">                1) Use cosine similarity to rank sentence similarity</span>
+<span class="sd">                2) Use PageRank algorithm via networkx to rank most important sentences</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="n">cv</span> <span class="o">=</span> <span class="n">CountVectorizer</span><span class="p">(</span><span class="n">stop_words</span><span class="o">=</span><span class="s1">&#39;english&#39;</span><span class="p">)</span>
+            <span class="n">sentenceVectors</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clean_sentences</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">similarityMatrix</span> <span class="o">=</span> <span class="n">cosine_similarity</span><span class="p">(</span><span class="n">sentenceVectors</span><span class="p">,</span><span class="n">sentenceVectors</span><span class="p">)</span>
+
+            <span class="n">nx_graph</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">from_numpy_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">similarityMatrix</span><span class="p">)</span>
+            <span class="n">scoreDict</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">pagerank</span><span class="p">(</span><span class="n">nx_graph</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">scoreDict</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">article</span> <span class="o">=</span> <span class="n">article</span>
+        <span class="n">generate_clean_sentences</span><span class="p">()</span>
+        <span class="n">rank_sentences</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">return_top_sentences</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the top n sentences according to PageRank score on cosine similarity matrix</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scores</span><span class="o">.</span><span class="n">argsort</span><span class="p">()[:</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sentences</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">idx</span><span class="p">]</span>
+</pre></div>
+
+
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">summarize_article</span><span class="p">(</span><span class="n">article</span><span class="p">,</span> <span class="n">headline</span><span class="p">,</span> <span class="n">n_sentences</span><span class="p">):</span>
+    <span class="n">ts</span> <span class="o">=</span> <span class="n">TextSummarizer</span><span class="p">(</span><span class="n">article</span><span class="p">)</span>
+    <span class="n">top</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">return_top_sentences</span><span class="p">(</span><span class="n">n_sentences</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">headline</span><span class="p">,</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">sentence</span> <span class="ow">in</span> <span class="n">top</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n\n\t</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">sentence</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;data/articles1.csv&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Unnamed: 0</th>
+      <th>id</th>
+      <th>title</th>
+      <th>publication</th>
+      <th>author</th>
+      <th>date</th>
+      <th>year</th>
+      <th>month</th>
+      <th>url</th>
+      <th>content</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0</td>
+      <td>17283</td>
+      <td>House Republicans Fret About Winning Their Hea...</td>
+      <td>New York Times</td>
+      <td>Carl Hulse</td>
+      <td>2016-12-31</td>
+      <td>2016.0</td>
+      <td>12.0</td>
+      <td>NaN</td>
+      <td>WASHINGTON  —   Congressional Republicans have...</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>17284</td>
+      <td>Rift Between Officers and Residents as Killing...</td>
+      <td>New York Times</td>
+      <td>Benjamin Mueller and Al Baker</td>
+      <td>2017-06-19</td>
+      <td>2017.0</td>
+      <td>6.0</td>
+      <td>NaN</td>
+      <td>After the bullet shells get counted, the blood...</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2</td>
+      <td>17285</td>
+      <td>Tyrus Wong, ‘Bambi’ Artist Thwarted by Racial ...</td>
+      <td>New York Times</td>
+      <td>Margalit Fox</td>
+      <td>2017-01-06</td>
+      <td>2017.0</td>
+      <td>1.0</td>
+      <td>NaN</td>
+      <td>When Walt Disney’s “Bambi” opened in 1942, cri...</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>3</td>
+      <td>17286</td>
+      <td>Among Deaths in 2016, a Heavy Toll in Pop Musi...</td>
+      <td>New York Times</td>
+      <td>William McDonald</td>
+      <td>2017-04-10</td>
+      <td>2017.0</td>
+      <td>4.0</td>
+      <td>NaN</td>
+      <td>Death may be the great equalizer, but it isn’t...</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>4</td>
+      <td>17287</td>
+      <td>Kim Jong-un Says North Korea Is Preparing to T...</td>
+      <td>New York Times</td>
+      <td>Choe Sang-Hun</td>
+      <td>2017-01-02</td>
+      <td>2017.0</td>
+      <td>1.0</td>
+      <td>NaN</td>
+      <td>SEOUL, South Korea  —   North Korea’s leader, ...</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>Let's try it out</p>
+<div class="highlight"><pre><span></span><span class="n">idx</span> <span class="o">=</span> <span class="mi">33</span>
+
+<span class="n">article</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="s1">&#39;content&#39;</span><span class="p">]</span>
+<span class="n">headline</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="s1">&#39;title&#39;</span><span class="p">]</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">article</span><span class="p">)</span>
+<span class="n">summarize_article</span><span class="p">(</span><span class="n">article</span><span class="p">,</span> <span class="n">headline</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre><span></span>OTTAWA  —   It was 7 a. m. and 99 passengers and six crew members were aboard a 737 on the tarmac at Calgary International Airport, bound for a sunny holiday in Cancun, Mexico. There was one problem, however. The flight’s captain was passed out in the cockpit, apparently from drinking. The police in Calgary, Alberta, arrested the pilot, Miroslav Gronych, 37, on Saturday and have charged him with two   offenses. “This is a new one, and obviously this had a very significant potential to cause great harm had the pilot actually been allowed to fly this plane,” Staff Sgt. Paul Stacey of the Calgary Police Service said at a news conference. “There’s just so many checks and balances, it just doesn’t surprise me that he got caught before this plane was able to leave the gate. ” Nevertheless, Inspector Ken Thrower, the commander of the Calgary Police Service’s traffic and airport unit, said his officers, along with airport officials and inspectors from Transport Canada, the aviation regulator, will begin trying to figure out how the pilot managed to pass through several checkpoints, including airport security, while obviously inebriated. Mr. Gronych was charged with two criminal offenses: having care and control of an aircraft while impaired, and having care and control of an aircraft while testing for more than 80 milligrams of alcohol per 100 milliliters of blood. “He was pretty high,” Sergeant Stacey said, adding that it was inconceivable that the pilot had followed Transport Canada regulations that bar drinking or drug use by pilots within eight hours of a flight. The aircraft was operated by Sunwing Airlines, a   carrier based in Toronto. Sunwing’s gate agents found the pilot’s behavior to be unusual and alerted the  . The   then discovered the pilot slumped in the captain’s seat and “severely impaired by alcohol,” Sergeant Stacey said. Transport Canada, which did not respond to requests for comment, is conducting a separate investigation, which is likely to result in additional charges, the police said. Inspector Thrower said Mr. Gronych is from Slovenia and is in Canada on a work visa. He will appear in court again on Thursday. After some delay, the flight did take off with a new crew. Sunwing did not respond to requests for comment. Janine Massey, a spokeswoman, told The Associated Press that the carrier was “very apologetic for any upset that this has caused and would like to assure our customers that safety remains our utmost priority. ”
+Airline Pilot, Believed to Be Drunk, Is Pulled From Cockpit in Canada - The New York Times
+
+
+
+     OTTAWA  —   It was 7 a. m. and 99 passengers and six crew members were aboard a 737 on the tarmac at Calgary International Airport, bound for a sunny holiday in Cancun, Mexico.
+
+
+     “There’s just so many checks and balances, it just doesn’t surprise me that he got caught before this plane was able to leave the gate.
+
+
+     The flight’s captain was passed out in the cockpit, apparently from drinking.
+</pre></div>
+
+
+<p>Seems to work pretty well. Of course, with all datasci projects, and especially NLP ones, you'll need to fine to it to your needs as well as your data set (emails vs articles, for example). Hope you took something away from it!</p>
+ </div>
+</div>
+ </div>
+</body>
+</html>

@@ -1,5 +1,235 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Blog - Cody Kane</title><link href="https://codykane.github.io/blog/" rel="alternate"></link><link href="https://codykane.github.io/blog/feeds/cody-kane.atom.xml" rel="self"></link><id>https://codykane.github.io/blog/</id><updated>2019-10-02T12:20:00-04:00</updated><entry><title>Principal Component Analysis for Dummies</title><link href="https://codykane.github.io/blog/blog-7.html" rel="alternate"></link><published>2019-10-02T12:20:00-04:00</published><updated>2019-10-02T12:20:00-04:00</updated><author><name>Cody Kane</name></author><id>tag:codykane.github.io,2019-10-02:/blog/blog-7.html</id><summary type="html">&lt;p&gt;Data from the following link: https://archive.ics.uci.edu/ml/machine-learning-databases/ecoli/
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Blog - Cody Kane</title><link href="https://codykane.github.io/blog/" rel="alternate"></link><link href="https://codykane.github.io/blog/feeds/cody-kane.atom.xml" rel="self"></link><id>https://codykane.github.io/blog/</id><updated>2019-10-18T12:48:00-04:00</updated><entry><title>Text Summarization</title><link href="https://codykane.github.io/blog/blog-8.html" rel="alternate"></link><published>2019-10-18T12:48:00-04:00</published><updated>2019-10-18T12:48:00-04:00</updated><author><name>Cody Kane</name></author><id>tag:codykane.github.io,2019-10-18:/blog/blog-8.html</id><summary type="html">&lt;p&gt;Artificial intelligence is a loaded word. The running joke in the datasci community is "If it's written in python, it's probably machine learning. If it's written in powerpoint, it's probably AI". My preferred definition is that of a task that previously we could only really on humans to execute. Language …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Artificial intelligence is a loaded word. The running joke in the datasci community is "If it's written in python, it's probably machine learning. If it's written in powerpoint, it's probably AI". My preferred definition is that of a task that previously we could only really on humans to execute. Language is the most human of all endeavours, so this project feels like my first 'true' foray into artifical intelligence. &lt;/p&gt;
+&lt;p&gt;Text summarization is a task that has been done exclusively by humans. Our efficiency in summarizing text is the exact same it was thousands of years ago. For this reason, natural language processing (NLP from here on out) projects like this truly excite me. &lt;/p&gt;
+&lt;p&gt;This post is a re-hasing of a presentation I did with Nick Morgan for the Harvard Class "Advanced Machine Learning, Data Mining, and Artificial Intelligence", taught by Dr. Peter Henstock, AI lead for Pfizer. &lt;/p&gt;
+&lt;p&gt;&lt;a href="https://github.com/Nick-Morgan"&gt;Nick's Github&lt;/a&gt; &lt;/p&gt;
+&lt;h2&gt; Extractive vs Abtractive &lt;/h2&gt;
+
+&lt;p&gt;There are two schools of text summarization, abstractive and extractive. Extractive takes out sentences deemed most important and/or covering the largest amount of information. Abstractive generates novel text to summarize the corpus. Both have their positives and negatives, but today we'll be focusing on extractive because abstractive generates all kinds of other NLP problems, generating correct grammar/syntax etc. There are three main steps in building an extractive model: &lt;/p&gt;
+&lt;p&gt;1) Construct an intermediate(numerical) interpretation of the text &lt;/p&gt;
+&lt;p&gt;2) Score the sentences based on representation &lt;/p&gt;
+&lt;p&gt;3) Select n number of sentences for summary&lt;/p&gt;
+&lt;h2&gt; TextRank &lt;/h2&gt;
+
+&lt;p&gt;The algorithm we'll use to rank the importance of the sentences is called TextRank. It is based on PageRank, which is used to rank the popularity of websites on the internet. The fundamental logic is that important websites will be referenced by other important websites. Through a network analysis we can form a hierarchy. In TextRank, the websites are replaced with sentences from the corpus.&lt;/p&gt;
+&lt;h2&gt; Data Cleaning &amp; Extraction &lt;/h2&gt;
+
+&lt;p&gt;Before we can feed the text into the algorithm, there are some intermediate cleanign steps. First, we 'tokenize' (split) the text into sentences. Then, we remove most punctuation, this serves to guarantee that our algorithm doesn't read "cat!" and "cat?" as separate words. Then, we remove sentences less than 3 words due to probable lack of info. Then we use cosine similarity to determine similarity of setences. You may need to dust off your linear algebra textbook, but (a very condensed) explanation is that it uses the dot product of the vectors of binarized sentences (converted to 1s &amp;amp; 0s) to compare sameness. For a less obstuse explanation, here is a quality &lt;a href="http://blog.christianperone.com/2013/09/machine-learning-cosine-similarity-for-vector-space-models-part-iii/"&gt;blog post&lt;/a&gt; &lt;/p&gt;
+&lt;p&gt;Let's get down to coding. The dataset is the first 1000 rows of this &lt;a href="https://www.kaggle.com/snapcrack/all-the-news"&gt;Kaggle Dataset&lt;/a&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;nltk&lt;/span&gt;
+&lt;span class="n"&gt;nltk&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;download&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;punkt&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="c1"&gt;# one time execution&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;nltk.corpus&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;stopwords&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;nltk.cluster.util&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;cosine_distance&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;nltk.tokenize&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;sent_tokenize&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;nltk.tokenize&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;RegexpTokenizer&lt;/span&gt;
+
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;scipy.spatial.distance&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;cosine&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;cosine_diference&lt;/span&gt;
+
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;sklearn.feature_extraction.text&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;CountVectorizer&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;sklearn.metrics.pairwise&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;cosine_similarity&lt;/span&gt;
+
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;re&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;numpy&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;np&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;pandas&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;pd&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;networkx&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;nx&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;[nltk_data] Downloading package punkt to /Users/cody/nltk_data...
+[nltk_data]   Package punkt is already up-to-date!
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;TextSummarizer&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;article&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;generate_clean_sentences&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+            &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+&lt;span class="sd"&gt;            Purpose:&lt;/span&gt;
+&lt;span class="sd"&gt;                1) Use nltk.sent_tokenize to split article into sentences&lt;/span&gt;
+&lt;span class="sd"&gt;                2) Remove punctuation with nltk.RegExpTokenizer&lt;/span&gt;
+&lt;span class="sd"&gt;                3) Remove sentences with less than 3 words&lt;/span&gt;
+&lt;span class="sd"&gt;            &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sentences&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Series&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;sent_tokenize&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;article&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+            &lt;span class="c1"&gt;#not to remove numbers, nor periods &amp;amp; percentage signs, otherwise 1.5C would become 15c&lt;/span&gt;
+            &lt;span class="c1"&gt;#and 1% chance becomes 1 chance        &lt;/span&gt;
+            &lt;span class="n"&gt;clean_sentences&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Series&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sentences&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;str&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;replace&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;[!,@?#$^.&amp;amp;*]&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="c1"&gt;# remove short sentences&lt;/span&gt;
+            &lt;span class="n"&gt;msk&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;clean_sentences&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;str&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;len&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;=&lt;/span&gt; &lt;span class="mi"&gt;3&lt;/span&gt;
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;clean_sentences&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;clean_sentences&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;msk&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+        &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;rank_sentences&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+            &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+&lt;span class="sd"&gt;            Purpose:&lt;/span&gt;
+&lt;span class="sd"&gt;                1) Use cosine similarity to rank sentence similarity&lt;/span&gt;
+&lt;span class="sd"&gt;                2) Use PageRank algorithm via networkx to rank most important sentences&lt;/span&gt;
+&lt;span class="sd"&gt;            &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+            &lt;span class="n"&gt;cv&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;CountVectorizer&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;stop_words&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;english&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="n"&gt;sentenceVectors&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;cv&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit_transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;clean_sentences&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;similarityMatrix&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;cosine_similarity&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;sentenceVectors&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;sentenceVectors&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+            &lt;span class="n"&gt;nx_graph&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;nx&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;from_numpy_array&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;similarityMatrix&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="n"&gt;scoreDict&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;nx&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;pagerank&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;nx_graph&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;scores&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;array&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;list&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;scoreDict&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;values&lt;/span&gt;&lt;span class="p"&gt;()))&lt;/span&gt;
+
+
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;article&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;article&lt;/span&gt;
+        &lt;span class="n"&gt;generate_clean_sentences&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="n"&gt;rank_sentences&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;return_top_sentences&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+&lt;span class="sd"&gt;        Returns the top n sentences according to PageRank score on cosine similarity matrix&lt;/span&gt;
+&lt;span class="sd"&gt;        &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+        &lt;span class="n"&gt;idx&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;scores&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;argsort&lt;/span&gt;&lt;span class="p"&gt;()[:&lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sentences&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;idx&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;summarize_article&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;article&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;headline&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;n_sentences&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;ts&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;TextSummarizer&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;article&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;top&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ts&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return_top_sentences&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;n_sentences&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;headline&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;sentence&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;top&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&lt;/span&gt;&lt;span class="se"&gt;\n\n\t&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;sentence&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;df&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read_csv&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;data/articles1.csv&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;encoding&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;utf-8&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;head&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div&gt;
+&lt;style scoped&gt;
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+&lt;/style&gt;
+&lt;table border="1" class="dataframe"&gt;
+  &lt;thead&gt;
+    &lt;tr style="text-align: right;"&gt;
+      &lt;th&gt;&lt;/th&gt;
+      &lt;th&gt;Unnamed: 0&lt;/th&gt;
+      &lt;th&gt;id&lt;/th&gt;
+      &lt;th&gt;title&lt;/th&gt;
+      &lt;th&gt;publication&lt;/th&gt;
+      &lt;th&gt;author&lt;/th&gt;
+      &lt;th&gt;date&lt;/th&gt;
+      &lt;th&gt;year&lt;/th&gt;
+      &lt;th&gt;month&lt;/th&gt;
+      &lt;th&gt;url&lt;/th&gt;
+      &lt;th&gt;content&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;th&gt;0&lt;/th&gt;
+      &lt;td&gt;0&lt;/td&gt;
+      &lt;td&gt;17283&lt;/td&gt;
+      &lt;td&gt;House Republicans Fret About Winning Their Hea...&lt;/td&gt;
+      &lt;td&gt;New York Times&lt;/td&gt;
+      &lt;td&gt;Carl Hulse&lt;/td&gt;
+      &lt;td&gt;2016-12-31&lt;/td&gt;
+      &lt;td&gt;2016.0&lt;/td&gt;
+      &lt;td&gt;12.0&lt;/td&gt;
+      &lt;td&gt;NaN&lt;/td&gt;
+      &lt;td&gt;WASHINGTON  —   Congressional Republicans have...&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;1&lt;/th&gt;
+      &lt;td&gt;1&lt;/td&gt;
+      &lt;td&gt;17284&lt;/td&gt;
+      &lt;td&gt;Rift Between Officers and Residents as Killing...&lt;/td&gt;
+      &lt;td&gt;New York Times&lt;/td&gt;
+      &lt;td&gt;Benjamin Mueller and Al Baker&lt;/td&gt;
+      &lt;td&gt;2017-06-19&lt;/td&gt;
+      &lt;td&gt;2017.0&lt;/td&gt;
+      &lt;td&gt;6.0&lt;/td&gt;
+      &lt;td&gt;NaN&lt;/td&gt;
+      &lt;td&gt;After the bullet shells get counted, the blood...&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;2&lt;/th&gt;
+      &lt;td&gt;2&lt;/td&gt;
+      &lt;td&gt;17285&lt;/td&gt;
+      &lt;td&gt;Tyrus Wong, ‘Bambi’ Artist Thwarted by Racial ...&lt;/td&gt;
+      &lt;td&gt;New York Times&lt;/td&gt;
+      &lt;td&gt;Margalit Fox&lt;/td&gt;
+      &lt;td&gt;2017-01-06&lt;/td&gt;
+      &lt;td&gt;2017.0&lt;/td&gt;
+      &lt;td&gt;1.0&lt;/td&gt;
+      &lt;td&gt;NaN&lt;/td&gt;
+      &lt;td&gt;When Walt Disney’s “Bambi” opened in 1942, cri...&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;3&lt;/th&gt;
+      &lt;td&gt;3&lt;/td&gt;
+      &lt;td&gt;17286&lt;/td&gt;
+      &lt;td&gt;Among Deaths in 2016, a Heavy Toll in Pop Musi...&lt;/td&gt;
+      &lt;td&gt;New York Times&lt;/td&gt;
+      &lt;td&gt;William McDonald&lt;/td&gt;
+      &lt;td&gt;2017-04-10&lt;/td&gt;
+      &lt;td&gt;2017.0&lt;/td&gt;
+      &lt;td&gt;4.0&lt;/td&gt;
+      &lt;td&gt;NaN&lt;/td&gt;
+      &lt;td&gt;Death may be the great equalizer, but it isn’t...&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;4&lt;/th&gt;
+      &lt;td&gt;4&lt;/td&gt;
+      &lt;td&gt;17287&lt;/td&gt;
+      &lt;td&gt;Kim Jong-un Says North Korea Is Preparing to T...&lt;/td&gt;
+      &lt;td&gt;New York Times&lt;/td&gt;
+      &lt;td&gt;Choe Sang-Hun&lt;/td&gt;
+      &lt;td&gt;2017-01-02&lt;/td&gt;
+      &lt;td&gt;2017.0&lt;/td&gt;
+      &lt;td&gt;1.0&lt;/td&gt;
+      &lt;td&gt;NaN&lt;/td&gt;
+      &lt;td&gt;SEOUL, South Korea  —   North Korea’s leader, ...&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Let's try it out&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;idx&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;33&lt;/span&gt;
+
+&lt;span class="n"&gt;article&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;loc&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;idx&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;content&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="n"&gt;headline&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;loc&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;idx&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;title&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+&lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;article&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;summarize_article&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;article&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;headline&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;OTTAWA  —   It was 7 a. m. and 99 passengers and six crew members were aboard a 737 on the tarmac at Calgary International Airport, bound for a sunny holiday in Cancun, Mexico. There was one problem, however. The flight’s captain was passed out in the cockpit, apparently from drinking. The police in Calgary, Alberta, arrested the pilot, Miroslav Gronych, 37, on Saturday and have charged him with two   offenses. “This is a new one, and obviously this had a very significant potential to cause great harm had the pilot actually been allowed to fly this plane,” Staff Sgt. Paul Stacey of the Calgary Police Service said at a news conference. “There’s just so many checks and balances, it just doesn’t surprise me that he got caught before this plane was able to leave the gate. ” Nevertheless, Inspector Ken Thrower, the commander of the Calgary Police Service’s traffic and airport unit, said his officers, along with airport officials and inspectors from Transport Canada, the aviation regulator, will begin trying to figure out how the pilot managed to pass through several checkpoints, including airport security, while obviously inebriated. Mr. Gronych was charged with two criminal offenses: having care and control of an aircraft while impaired, and having care and control of an aircraft while testing for more than 80 milligrams of alcohol per 100 milliliters of blood. “He was pretty high,” Sergeant Stacey said, adding that it was inconceivable that the pilot had followed Transport Canada regulations that bar drinking or drug use by pilots within eight hours of a flight. The aircraft was operated by Sunwing Airlines, a   carrier based in Toronto. Sunwing’s gate agents found the pilot’s behavior to be unusual and alerted the  . The   then discovered the pilot slumped in the captain’s seat and “severely impaired by alcohol,” Sergeant Stacey said. Transport Canada, which did not respond to requests for comment, is conducting a separate investigation, which is likely to result in additional charges, the police said. Inspector Thrower said Mr. Gronych is from Slovenia and is in Canada on a work visa. He will appear in court again on Thursday. After some delay, the flight did take off with a new crew. Sunwing did not respond to requests for comment. Janine Massey, a spokeswoman, told The Associated Press that the carrier was “very apologetic for any upset that this has caused and would like to assure our customers that safety remains our utmost priority. ”
+Airline Pilot, Believed to Be Drunk, Is Pulled From Cockpit in Canada - The New York Times
+
+
+
+     OTTAWA  —   It was 7 a. m. and 99 passengers and six crew members were aboard a 737 on the tarmac at Calgary International Airport, bound for a sunny holiday in Cancun, Mexico.
+
+
+     “There’s just so many checks and balances, it just doesn’t surprise me that he got caught before this plane was able to leave the gate.
+
+
+     The flight’s captain was passed out in the cockpit, apparently from drinking.
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Seems to work pretty well. Of course, with all datasci projects, and especially NLP ones, you'll need to fine to it to your needs as well as your data set (emails vs articles, for example). Hope you took something away from it!&lt;/p&gt;</content><category term="python"></category><category term="text summarization"></category><category term="ai"></category></entry><entry><title>Principal Component Analysis for Dummies</title><link href="https://codykane.github.io/blog/blog-7.html" rel="alternate"></link><published>2019-10-02T12:20:00-04:00</published><updated>2019-10-02T12:20:00-04:00</updated><author><name>Cody Kane</name></author><id>tag:codykane.github.io,2019-10-02:/blog/blog-7.html</id><summary type="html">&lt;p&gt;Data from the following link: https://archive.ics.uci.edu/ml/machine-learning-databases/ecoli/
 The dataset was created by Kenta Nakai at the Institute of cellular and Molecular Biology in Osaka, Japan. It concerns the protein localization sites of E.coli subspecies. This is all secondary to my purpose of demonstrating …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Data from the following link: https://archive.ics.uci.edu/ml/machine-learning-databases/ecoli/
 The dataset was created by Kenta Nakai at the Institute of cellular and Molecular Biology in Osaka, Japan. It concerns the protein localization sites of E.coli subspecies. This is all secondary to my purpose of demonstrating PCA, but if you're interested the following papers were written about the dataset:&lt;/p&gt;
 &lt;p&gt;Reference: "Expert Sytem for Predicting Protein Localization Sites in 
